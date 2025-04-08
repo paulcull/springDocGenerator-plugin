@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: springdoc-demo-config
+data:
+  SPRING_PROFILES_ACTIVE: "default"
+  JAVA_OPTS: "-Xmx512m -Xms256m"
+  SPRING_DOC_SWAGGER_UI_ENABLED: "true"
+  SPRING_DOC_API_DOCS_ENABLED: "true"
+  SPRING_DOC_SWAGGER_UI_PATH: "/swagger-ui.html"
+  SPRING_DOC_API_DOCS_PATH: "/v3/api-docs" 

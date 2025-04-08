@@ -1,0 +1,2 @@
+# This file ensures the docs directory is tracked by Git
+# and prevents it from being deleted during clean operations 

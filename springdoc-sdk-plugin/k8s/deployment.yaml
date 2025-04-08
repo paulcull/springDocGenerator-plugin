@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: springdoc-demo
+  labels:
+    app: springdoc-demo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: springdoc-demo
+  template:
+    metadata:
+      labels:
+        app: springdoc-demo
+    spec:
+      containers:
+      - name: springdoc-demo
+        image: springdoc-demo:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: api
+        - containerPort: 8000
+          name: docs
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        envFrom:
+        - configMapRef:
+            name: springdoc-demo-config
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 15 

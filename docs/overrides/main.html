@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block site_nav %}
+  {% if nav %}
+    {% if config.extra.version_dropdown %}
+    <div class="md-version">
+      <label for="__version">Version</label>
+      <select id="__version" onchange="window.location.href=this.value">
+        {% for version in config.extra.versions %}
+        <option value="/versions/{{ version }}/"{% if version == config.extra.current_version %} selected{% endif %}>
+          {{ version }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    {% endif %}
+    {% include "partials/nav.html" %}
+  {% endif %}
+{% endblock %} 
