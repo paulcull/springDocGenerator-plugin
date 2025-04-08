@@ -4,11 +4,11 @@
 
 <plugin>
   <name>springdoc-sdk-plugin-core</name>
-  <description>A Maven plugin for generating SDKs and documentation from OpenAPI specifications</description>
+  <description>A Maven plugin for generating SDK documentation from OpenAPI specifications</description>
   <groupId>com.example</groupId>
   <artifactId>springdoc-sdk-plugin-core</artifactId>
   <version>1.0.0-SNAPSHOT</version>
-  <goalPrefix>springdoc-sdkcore</goalPrefix>
+  <goalPrefix>springdoc-core</goalPrefix>
   <mojos>
     <mojo>
       <goal>generate</goal>
@@ -84,7 +84,28 @@
       <threadSafe>false</threadSafe>
       <parameters>
         <parameter>
+          <name>basePackage</name>
+          <type>java.lang.String</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
+        <parameter>
+          <name>configClassName</name>
+          <type>java.lang.String</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
+        <parameter>
           <name>injectHostingEndpoints</name>
+          <type>boolean</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
+        <parameter>
+          <name>injectSwaggerUI</name>
           <type>boolean</type>
           <required>false</required>
           <editable>true</editable>
@@ -99,30 +120,110 @@
         </parameter>
         <parameter>
           <name>outputDirectory</name>
+          <type>java.io.File</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
+        <parameter>
+          <name>redirectFrom</name>
           <type>java.lang.String</type>
           <required>false</required>
           <editable>true</editable>
           <description></description>
         </parameter>
         <parameter>
-          <name>outputFormat</name>
+          <name>redirectTo</name>
           <type>java.lang.String</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
+        <parameter>
+          <name>resourceHandlerPath</name>
+          <type>java.lang.String</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
+        <parameter>
+          <name>resourceLocation</name>
+          <type>java.lang.String</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
+        <parameter>
+          <name>resourcePaths</name>
+          <type>java.lang.String[]</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
+        <parameter>
+          <name>swaggerUIConfig</name>
+          <type>com.example.springdoc.plugin.config.SwaggerUIConfig</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
+        <parameter>
+          <name>swaggerUIPath</name>
+          <type>java.lang.String</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
+        <parameter>
+          <name>swaggerUIVersion</name>
+          <type>java.lang.String</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
+        <parameter>
+          <name>templateDirectory</name>
+          <type>java.lang.String</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
+        <parameter>
+          <name>templateMappings</name>
+          <type>java.util.Map&lt;java.lang.String, java.lang.String&gt;</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
+        <parameter>
+          <name>templateVariables</name>
+          <type>java.util.Map&lt;java.lang.String, java.lang.Object&gt;</type>
           <required>false</required>
           <editable>true</editable>
           <description></description>
         </parameter>
       </parameters>
       <configuration>
-        <injectHostingEndpoints implementation="boolean" default-value="true">${injectHostingEndpoints}</injectHostingEndpoints>
-        <openApiSpec implementation="java.lang.String">${openApiSpec}</openApiSpec>
-        <outputDirectory implementation="java.lang.String" default-value="${project.build.directory}/generated-docs">${outputDirectory}</outputDirectory>
-        <outputFormat implementation="java.lang.String" default-value="html">${outputFormat}</outputFormat>
+        <basePackage implementation="java.lang.String" default-value="${project.groupId}">${springdoc.basePackage}</basePackage>
+        <configClassName implementation="java.lang.String" default-value="DocumentationConfig">${springdoc.configClassName}</configClassName>
+        <injectHostingEndpoints implementation="boolean" default-value="true">${springdoc.injectHostingEndpoints}</injectHostingEndpoints>
+        <injectSwaggerUI implementation="boolean" default-value="true">${springdoc.injectSwaggerUI}</injectSwaggerUI>
+        <openApiSpec implementation="java.lang.String">${springdoc.openApiSpec}</openApiSpec>
+        <outputDirectory implementation="java.io.File" default-value="${project.build.directory}/classes/generated-docs">${springdoc.outputDirectory}</outputDirectory>
+        <redirectFrom implementation="java.lang.String" default-value="/docs">${springdoc.redirectFrom}</redirectFrom>
+        <redirectTo implementation="java.lang.String" default-value="/docs/index.html">${springdoc.redirectTo}</redirectTo>
+        <resourceHandlerPath implementation="java.lang.String" default-value="/docs/**">${springdoc.resourceHandlerPath}</resourceHandlerPath>
+        <resourceLocation implementation="java.lang.String" default-value="classpath:/static/docs/">${springdoc.resourceLocation}</resourceLocation>
+        <resourcePaths implementation="java.lang.String[]" default-value="static">${springdoc.resourcePaths}</resourcePaths>
+        <swaggerUIPath implementation="java.lang.String" default-value="/swagger-ui.html">${springdoc.swaggerUIPath}</swaggerUIPath>
+        <swaggerUIVersion implementation="java.lang.String" default-value="5.11.0">${springdoc.swaggerUIVersion}</swaggerUIVersion>
+        <templateDirectory implementation="java.lang.String" default-value="templates">${springdoc.templateDirectory}</templateDirectory>
       </configuration>
     </mojo>
     <mojo>
       <goal>help</goal>
       <description>Display help information on springdoc-sdk-plugin-core. 
-Call mvn springdoc-sdkcore:help -Ddetail=true -Dgoal=&lt;goal-name&gt; to display parameter details.</description>
+Call mvn springdoc-core:help -Ddetail=true -Dgoal=&lt;goal-name&gt; to display parameter details.</description>
       <requiresDirectInvocation>false</requiresDirectInvocation>
       <requiresProject>false</requiresProject>
       <requiresReports>false</requiresReports>

@@ -4,16 +4,16 @@
 
 <plugin>
   <name>springdoc-sdk-plugin-docs-generator</name>
-  <description>A Maven plugin for generating SDKs and documentation from OpenAPI specifications</description>
+  <description>A Maven plugin for generating SDK documentation from OpenAPI specifications</description>
   <groupId>com.example</groupId>
   <artifactId>springdoc-sdk-plugin-docs-generator</artifactId>
   <version>1.0.0-SNAPSHOT</version>
-  <goalPrefix>springdoc-sdkdocs-generator</goalPrefix>
+  <goalPrefix>springdoc-docs</goalPrefix>
   <mojos>
     <mojo>
       <goal>help</goal>
       <description>Display help information on springdoc-sdk-plugin-docs-generator. 
-Call mvn springdoc-sdkdocs-generator:help -Ddetail=true -Dgoal=&lt;goal-name&gt; to display parameter details.</description>
+Call mvn springdoc-docs:help -Ddetail=true -Dgoal=&lt;goal-name&gt; to display parameter details.</description>
       <requiresDirectInvocation>false</requiresDirectInvocation>
       <requiresProject>false</requiresProject>
       <requiresReports>false</requiresReports>

@@ -1,13 +1,11 @@
 package com.example.springdoc.plugin;
 
-import freemarker.template.Configuration;
-import freemarker.template.Template;
+import com.example.springdoc.plugin.config.PluginConfiguration;
+import com.example.springdoc.plugin.config.SwaggerUIConfig;
+import com.example.springdoc.plugin.template.TemplateManager;
 import freemarker.template.TemplateException;
 import io.swagger.parser.OpenAPIParser;
 import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.Operation;
-import io.swagger.v3.oas.models.PathItem;
-import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.parser.core.models.ParseOptions;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
 import org.apache.maven.plugin.AbstractMojo;
@@ -17,57 +15,105 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
-import org.apache.commons.io.FileUtils;
-import freemarker.template.TemplateExceptionHandler;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.swagger.v3.oas.models.responses.ApiResponse;
-import io.swagger.v3.oas.models.responses.ApiResponses;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Mojo(name = "generate-docs", defaultPhase = LifecyclePhase.PROCESS_RESOURCES)
 public class GenerateDocsMojo extends AbstractMojo {
 
-    @org.apache.maven.plugins.annotations.Parameter(property = "openApiSpec", required = true)
+    @Parameter(property = "springdoc.openApiSpec", required = true)
     private String openApiSpec;
 
-    @org.apache.maven.plugins.annotations.Parameter(property = "outputDirectory", defaultValue = "${project.build.directory}/generated-docs")
-    private String outputDirectory;
+    @Parameter(property = "springdoc.outputDirectory", defaultValue = "${project.build.directory}/classes/generated-docs")
+    private File outputDirectory;
 
-    @org.apache.maven.plugins.annotations.Parameter(property = "outputFormat", defaultValue = "html")
-    private String outputFormat;
-
-    @org.apache.maven.plugins.annotations.Parameter(property = "injectHostingEndpoints", defaultValue = "true")
+    @Parameter(property = "springdoc.injectHostingEndpoints", defaultValue = "true")
     private boolean injectHostingEndpoints;
 
-    @org.apache.maven.plugins.annotations.Parameter(property = "project", readonly = true)
+    @Parameter(property = "springdoc.redirectFrom", defaultValue = "/docs")
+    private String redirectFrom;
+
+    @Parameter(property = "springdoc.redirectTo", defaultValue = "/docs/index.html")
+    private String redirectTo;
+
+    @Parameter(property = "springdoc.basePackage", defaultValue = "${project.groupId}")
+    private String basePackage;
+
+    @Parameter(property = "springdoc.templateDirectory", defaultValue = "templates")
+    private String templateDirectory;
+
+    @Parameter(property = "springdoc.resourcePaths", defaultValue = "static")
+    private String[] resourcePaths;
+
+    @Parameter(property = "springdoc.configClassName", defaultValue = "DocumentationConfig")
+    private String configClassName;
+
+    @Parameter(property = "springdoc.resourceHandlerPath", defaultValue = "/docs/**")
+    private String resourceHandlerPath;
+
+    @Parameter(property = "springdoc.resourceLocation", defaultValue = "classpath:/static/docs/")
+    private String resourceLocation;
+
+    @Parameter(property = "springdoc.injectSwaggerUI", defaultValue = "true")
+    private boolean injectSwaggerUI;
+
+    @Parameter(property = "springdoc.swaggerUIPath", defaultValue = "/swagger-ui.html")
+    private String swaggerUIPath;
+
+    @Parameter(property = "springdoc.swaggerUIVersion", defaultValue = "5.11.0")
+    private String swaggerUIVersion;
+
+    @Parameter
+    private SwaggerUIConfig swaggerUIConfig;
+
+    @Parameter(property = "project", readonly = true)
     private MavenProject project;
 
-    private Configuration cfg;
+    @Parameter
+    private Map<String, String> templateMappings;
+
+    @Parameter
+    private Map<String, Object> templateVariables;
+
+    private TemplateManager templateManager;
+    private PluginConfiguration configuration;
 
     @Override
-    public void execute() throws MojoExecutionException {
+    public void execute() throws MojoExecutionException, MojoFailureException {
         try {
+            // Initialize configuration with provided values
+            configuration = new PluginConfiguration();
+            configuration.setBasePackage(basePackage);
+            configuration.setTemplateDirectory(templateDirectory);
+            configuration.setResourcePaths(Arrays.asList(resourcePaths));
+            configuration.setTemplateMappings(templateMappings != null ? templateMappings : new HashMap<>());
+            configuration.setConfigClassName(configClassName);
+            configuration.setResourceHandlerPath(resourceHandlerPath);
+            configuration.setResourceLocation(resourceLocation);
+            configuration.setDefaultRedirectFrom(redirectFrom);
+            configuration.setDefaultRedirectTo(redirectTo);
+            configuration.setInjectSwaggerUI(injectSwaggerUI);
+            configuration.setSwaggerUIPath(swaggerUIPath);
+            configuration.setSwaggerUIVersion(swaggerUIVersion);
+            configuration.setSwaggerUIConfig(swaggerUIConfig != null ? swaggerUIConfig : new SwaggerUIConfig());
+
+            // Initialize template manager
+            templateManager = new TemplateManager(configuration.getTemplateDirectory(), getLog());
+
             getLog().info("Reading OpenAPI specification from: " + openApiSpec);
             OpenAPI openAPI = readOpenAPISpec();
             
-            // Initialize FreeMarker configuration
-            cfg = new Configuration(Configuration.VERSION_2_3_32);
-            cfg.setDefaultEncoding("UTF-8");
-            cfg.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
-            cfg.setLogTemplateExceptions(false);
-            cfg.setWrapUncheckedExceptions(true);
-            cfg.setFallbackOnNullLoopVariable(false);
-            
             // Create output directory if it doesn't exist
-            File outputDir = new File(outputDirectory);
-            if (!outputDir.exists()) {
-                outputDir.mkdirs();
+            if (!outputDirectory.exists()) {
+                outputDirectory.mkdirs();
             }
             
             // Process templates and generate documentation
@@ -75,48 +121,72 @@ public class GenerateDocsMojo extends AbstractMojo {
             
             // Generate configuration class if enabled
             if (injectHostingEndpoints) {
-                generateConfigurationClass();
+                getLog().info("Injecting documentation hosting configuration...");
+                injectConfigurationClass();
+            } else {
+                getLog().info("Skipping documentation hosting configuration (injectHostingEndpoints=false)");
             }
             
             getLog().info("Documentation generated successfully in " + outputDirectory);
         } catch (MojoExecutionException e) {
             throw e;
         } catch (Exception e) {
-            throw new MojoExecutionException(e.getMessage(), e);
+            throw new MojoExecutionException("Failed to generate documentation: " + e.getMessage(), e);
         }
     }
 
-    private void injectConfigurationClass() throws IOException {
-        // Create the package directory structure in source directory first
-        Path sourcePath = Paths.get(project.getBuild().getDirectory(), "generated-sources", "annotations", "com", "example", "springdoc", "config");
-        Files.createDirectories(sourcePath);
+    private void injectConfigurationClass() throws IOException, TemplateException, MojoExecutionException {
+        try {
+            Path sourcePath = createSourcePath();
 
-        // Read and write the configuration class
-        String configTemplate = readResourceFile("templates/DocumentationConfig.java");
-        Path configFile = sourcePath.resolve("DocumentationConfig.java");
-        Files.write(configFile, configTemplate.getBytes());
+            // Generate DocumentationConfig
+            Map<String, Object> data = new HashMap<>();
+            data.put("packageName", configuration.getBasePackage());
+            data.put("className", configuration.getConfigClassName());
+            data.put("resourceHandlerPath", configuration.getResourceHandlerPath());
+            data.put("resourceLocation", configuration.getResourceLocation());
+            data.put("redirectFrom", configuration.getDefaultRedirectFrom());
+            data.put("redirectTo", configuration.getDefaultRedirectTo());
 
-        // Add the generated sources directory to both compile and test source roots
-        String generatedSourcesPath = Paths.get(project.getBuild().getDirectory(), "generated-sources", "annotations").toString();
-        project.addCompileSourceRoot(generatedSourcesPath);
-        project.addTestCompileSourceRoot(generatedSourcesPath);
-
-        getLog().info("Generated configuration class: " + configFile);
-        getLog().info("Added generated sources to compile and test source roots: " + generatedSourcesPath);
-    }
-
-    private String readResourceFile(String resourcePath) throws IOException {
-        try (InputStream is = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
-            if (is == null) {
-                throw new IOException("Resource not found: " + resourcePath);
+            // Add any custom template variables
+            if (templateVariables != null) {
+                data.putAll(templateVariables);
             }
-            return new String(is.readAllBytes());
+
+            Path configFile = sourcePath.resolve(configuration.getConfigClassName() + ".java");
+            templateManager.writeTemplate("DocumentationConfig.java.ftl", data, configFile);
+            getLog().info("Generated documentation configuration class: " + configFile);
+
+            // Generate DocumentationController
+            Path controllerPath = sourcePath.resolve("controller");
+            Files.createDirectories(controllerPath);
+            Path controllerFile = controllerPath.resolve("DocumentationController.java");
+            templateManager.writeTemplate("DocumentationController.java.ftl", data, controllerFile);
+            getLog().info("Generated documentation controller class: " + controllerFile);
+
+            // Generate SwaggerUIConfig if enabled
+            if (swaggerUIConfig != null && swaggerUIConfig.isEnabled()) {
+                data = new HashMap<>();
+                data.put("packageName", configuration.getBasePackage());
+                data.put("swaggerUIConfig", configuration.getSwaggerUIConfig());
+                if (templateVariables != null) {
+                    data.putAll(templateVariables);
+                }
+
+                Path swaggerConfigFile = sourcePath.resolve("SwaggerUIConfig.java");
+                templateManager.writeTemplate("SwaggerUIConfig.java.ftl", data, swaggerConfigFile);
+                getLog().info("Generated Swagger UI configuration class: " + swaggerConfigFile);
+            }
+
+            addGeneratedSourcesToProject();
+
+        } catch (IOException | TemplateException e) {
+            throw new MojoExecutionException("Failed to inject documentation hosting configuration: " + e.getMessage(), e);
         }
     }
 
     private OpenAPI readOpenAPISpec() throws MojoExecutionException {
         try {
-            getLog().info("Reading OpenAPI specification from: " + openApiSpec);
             ParseOptions options = new ParseOptions();
             options.setResolve(true);
             options.setResolveFully(true);
@@ -177,251 +247,47 @@ public class GenerateDocsMojo extends AbstractMojo {
                 getLog().warn("OpenAPI parsing message: " + message);
             }
         }
-
-        OpenAPI openAPI = result.getOpenAPI();
-        if (openAPI.getInfo() == null) {
-            throw new MojoExecutionException("Invalid OpenAPI specification: Missing 'info' section");
-        }
-
-        Info info = openAPI.getInfo();
-        if (info.getTitle() == null || info.getTitle().trim().isEmpty()) {
-            throw new MojoExecutionException("Invalid OpenAPI specification: Missing 'info.title'");
-        }
-
-        if (info.getVersion() == null || info.getVersion().trim().isEmpty()) {
-            throw new MojoExecutionException("Invalid OpenAPI specification: Missing 'info.version'");
-        }
-
-        // Log successful validation
-        getLog().info("Successfully validated OpenAPI specification: " + info.getTitle() + " v" + info.getVersion());
     }
 
-    private Template getTemplate(String templateName) throws IOException {
-        // First try to load from classpath
-        cfg.setClassLoaderForTemplateLoading(getClass().getClassLoader(), "templates");
+    private void processTemplates(OpenAPI openAPI) throws IOException, TemplateException, MojoExecutionException {
         try {
-            return cfg.getTemplate(templateName);
-        } catch (IOException e) {
-            getLog().warn("Failed to load template from classpath: " + e.getMessage());
-        }
+            // Prepare template data
+            Map<String, Object> data = new HashMap<>();
+            data.put("openAPI", openAPI);
+            data.put("title", openAPI.getInfo().getTitle());
+            data.put("description", openAPI.getInfo().getDescription());
+            data.put("version", openAPI.getInfo().getVersion());
+            data.put("basePackage", configuration.getBasePackage());
+            data.put("configClassName", configuration.getConfigClassName());
+            data.put("swaggerUIConfig", configuration.getSwaggerUIConfig());
 
-        // If not found in classpath, try filesystem
-        Path templatePath = Paths.get("src/main/resources/templates", templateName);
-        if (Files.exists(templatePath)) {
-            cfg.setDirectoryForTemplateLoading(templatePath.getParent().toFile());
-            try {
-                return cfg.getTemplate(templateName);
-            } catch (IOException e) {
-                getLog().error("Failed to load template: " + templateName);
-                getLog().error("Available resources in classpath:");
-                try (InputStream is = getClass().getClassLoader().getResourceAsStream("templates")) {
-                    if (is != null) {
-                        try (BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
-                            String resource;
-                            while ((resource = br.readLine()) != null) {
-                                getLog().error(" - " + resource);
-                            }
-                        }
-                    }
-                }
-                throw e;
+            // Process each template
+            for (Map.Entry<String, String> entry : configuration.getTemplateMappings().entrySet()) {
+                String templateName = entry.getKey();
+                String outputFileName = entry.getValue();
+                Path outputPath = Paths.get(outputDirectory.toString(), outputFileName);
+                templateManager.writeTemplate(templateName, data, outputPath);
+                getLog().info("Generated " + outputFileName);
             }
-        }
-
-        throw new IOException("Template not found: " + templateName);
-    }
-
-    private void processTemplates(OpenAPI openAPI) throws IOException, TemplateException {
-        Map<String, Object> model = new HashMap<>();
-        
-        // Add API info
-        Info info = openAPI.getInfo();
-        Map<String, Object> infoMap = new HashMap<>();
-        infoMap.put("title", info.getTitle());
-        infoMap.put("description", info.getDescription() != null ? info.getDescription() : "");
-        infoMap.put("version", info.getVersion());
-        if (info.getContact() != null) {
-            infoMap.put("contact", Map.of(
-                "name", info.getContact().getName() != null ? info.getContact().getName() : "",
-                "email", info.getContact().getEmail() != null ? info.getContact().getEmail() : "",
-                "url", info.getContact().getUrl() != null ? info.getContact().getUrl() : ""
-            ));
-        }
-        if (info.getLicense() != null) {
-            infoMap.put("license", Map.of(
-                "name", info.getLicense().getName() != null ? info.getLicense().getName() : "",
-                "url", info.getLicense().getUrl() != null ? info.getLicense().getUrl() : ""
-            ));
-        }
-        model.put("info", infoMap);
-        
-        // Add paths
-        model.put("paths", extractPaths(openAPI));
-        
-        // Add components if available
-        if (openAPI.getComponents() != null && openAPI.getComponents().getSchemas() != null) {
-            model.put("schemas", openAPI.getComponents().getSchemas());
-        }
-        
-        // Add servers if available
-        if (openAPI.getServers() != null && !openAPI.getServers().isEmpty()) {
-            model.put("servers", openAPI.getServers());
-        }
-
-        // Add tags if available
-        if (openAPI.getTags() != null && !openAPI.getTags().isEmpty()) {
-            List<Map<String, String>> tags = openAPI.getTags().stream()
-                .map(tag -> Map.of(
-                    "name", tag.getName() != null ? tag.getName() : "",
-                    "description", tag.getDescription() != null ? tag.getDescription() : ""
-                ))
-                .collect(Collectors.toList());
-            model.put("tags", tags);
-        }
-
-        // Create output directory if it doesn't exist
-        File outputDir = new File(outputDirectory);
-        if (!outputDir.exists()) {
-            outputDir.mkdirs();
-        }
-
-        // Generate all documentation files
-        String[] templateFiles = {"index.html", "api-docs.html", "sdk.html"};
-        for (String templateFile : templateFiles) {
-            try {
-                Template template = getTemplate(templateFile);
-                try (Writer writer = new FileWriter(new File(outputDir, templateFile))) {
-                    // Add common navigation model attributes
-                    model.put("navigation", Arrays.asList(
-                        Map.of("title", "Overview", "href", "index.html", "id", "overview"),
-                        Map.of("title", "API Reference", "href", "api-docs.html", "id", "api-docs"),
-                        Map.of("title", "SDK Guide", "href", "sdk.html", "id", "sdk")
-                    ));
-                    model.put("currentPage", templateFile);
-                    template.process(model, writer);
-                    getLog().info("Generated " + templateFile);
-                }
-            } catch (IOException | TemplateException e) {
-                getLog().error("Failed to generate " + templateFile + ": " + e.getMessage());
-                throw e;
-            }
-        }
-
-        // Copy any additional resources (images, CSS, etc.)
-        copyResources(outputDir);
-    }
-
-    private void copyResources(File outputDir) throws IOException {
-        // Copy Bootstrap CSS and JS
-        String[] resources = {
-            "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css",
-            "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
-        };
-
-        for (String resource : resources) {
-            String fileName = resource.substring(resource.lastIndexOf('/') + 1);
-            File resourceFile = new File(outputDir, fileName);
-            if (!resourceFile.exists()) {
-                try (InputStream in = new java.net.URL(resource).openStream();
-                     FileOutputStream out = new FileOutputStream(resourceFile)) {
-                    byte[] buffer = new byte[1024];
-                    int bytesRead;
-                    while ((bytesRead = in.read(buffer)) != -1) {
-                        out.write(buffer, 0, bytesRead);
-                    }
-                }
-            }
+        } catch (IOException | TemplateException e) {
+            throw new MojoExecutionException("Failed to process templates: " + e.getMessage(), e);
         }
     }
 
-    private List<Map<String, Object>> extractPaths(OpenAPI openAPI) {
-        List<Map<String, Object>> pathsList = new ArrayList<>();
-        Map<String, PathItem> paths = openAPI.getPaths();
-        if (paths != null) {
-            for (Map.Entry<String, PathItem> entry : paths.entrySet()) {
-                String url = entry.getKey();
-                PathItem pathItem = entry.getValue();
-
-                Map<String, Object> pathInfo = new HashMap<>();
-                pathInfo.put("url", url);
-                List<Map<String, Object>> operations = new ArrayList<>();
-
-                // Add GET operations
-                addOperationToList(operations, "GET", pathItem.getGet());
-                // Add POST operations
-                addOperationToList(operations, "POST", pathItem.getPost());
-                // Add PUT operations
-                addOperationToList(operations, "PUT", pathItem.getPut());
-                // Add DELETE operations
-                addOperationToList(operations, "DELETE", pathItem.getDelete());
-                // Add PATCH operations
-                addOperationToList(operations, "PATCH", pathItem.getPatch());
-
-                pathInfo.put("operations", operations);
-                pathsList.add(pathInfo);
-            }
+    private Path createSourcePath() throws IOException {
+        String[] packageParts = configuration.getBasePackage().split("\\.");
+        Path sourcePath = Paths.get(project.getBuild().getDirectory(), "generated-sources", "annotations");
+        for (String part : packageParts) {
+            sourcePath = sourcePath.resolve(part);
         }
-        return pathsList;
+        Files.createDirectories(sourcePath);
+        return sourcePath;
     }
 
-    private void addOperationToList(List<Map<String, Object>> operations, String method, Operation operation) {
-        if (operation != null) {
-            Map<String, Object> operationInfo = new HashMap<>();
-            operationInfo.put("method", method);
-            operationInfo.put("summary", operation.getSummary());
-            operationInfo.put("description", operation.getDescription());
-            operationInfo.put("operationId", operation.getOperationId());
-            operationInfo.put("tags", operation.getTags());
-            
-            // Add parameters
-            if (operation.getParameters() != null && !operation.getParameters().isEmpty()) {
-                List<Map<String, Object>> parameters = new ArrayList<>();
-                for (io.swagger.v3.oas.models.parameters.Parameter param : operation.getParameters()) {
-                    Map<String, Object> paramInfo = new HashMap<>();
-                    paramInfo.put("name", param.getName());
-                    paramInfo.put("in", param.getIn());
-                    paramInfo.put("description", param.getDescription());
-                    paramInfo.put("required", param.getRequired());
-                    parameters.add(paramInfo);
-                }
-                operationInfo.put("parameters", parameters);
-            }
-            
-            // Add responses
-            if (operation.getResponses() != null && !operation.getResponses().isEmpty()) {
-                Map<String, Object> responses = new HashMap<>();
-                for (Map.Entry<String, ApiResponse> entry : operation.getResponses().entrySet()) {
-                    Map<String, Object> responseInfo = new HashMap<>();
-                    responseInfo.put("description", entry.getValue().getDescription());
-                    responses.put(entry.getKey(), responseInfo);
-                }
-                operationInfo.put("responses", responses);
-            }
-            
-            operations.add(operationInfo);
-        }
-    }
-
-    private void generateConfigurationClass() throws MojoExecutionException {
-        try {
-            // Create the package directory structure in source directory first
-            Path sourcePath = Paths.get(project.getBuild().getDirectory(), "generated-sources", "annotations", "com", "example", "springdoc", "config");
-            Files.createDirectories(sourcePath);
-
-            // Read and write the configuration class
-            String configTemplate = readResourceFile("templates/DocumentationConfig.java");
-            Path configFile = sourcePath.resolve("DocumentationConfig.java");
-            Files.write(configFile, configTemplate.getBytes());
-
-            // Add the generated sources directory to both compile and test source roots
-            String generatedSourcesPath = Paths.get(project.getBuild().getDirectory(), "generated-sources", "annotations").toString();
-            project.addCompileSourceRoot(generatedSourcesPath);
-            project.addTestCompileSourceRoot(generatedSourcesPath);
-
-            getLog().info("Generated configuration class: " + configFile);
-            getLog().info("Added generated sources to compile and test source roots: " + generatedSourcesPath);
-        } catch (IOException e) {
-            throw new MojoExecutionException("Failed to generate configuration class", e);
-        }
+    private void addGeneratedSourcesToProject() {
+        String generatedSourcesPath = Paths.get(project.getBuild().getDirectory(), "generated-sources", "annotations").toString();
+        project.addCompileSourceRoot(generatedSourcesPath);
+        project.addTestCompileSourceRoot(generatedSourcesPath);
+        getLog().info("Added generated sources to compile and test source roots: " + generatedSourcesPath);
     }
 } 

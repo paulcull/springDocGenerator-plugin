@@ -4,11 +4,11 @@
 
 <plugin>
   <name>springdoc-sdk-plugin-core</name>
-  <description>A Maven plugin for generating SDKs and documentation from OpenAPI specifications</description>
+  <description>A Maven plugin for generating SDK documentation from OpenAPI specifications</description>
   <groupId>com.example</groupId>
   <artifactId>springdoc-sdk-plugin-core</artifactId>
   <version>1.0.0-SNAPSHOT</version>
-  <goalPrefix>springdoc-sdkcore</goalPrefix>
+  <goalPrefix>springdoc-core</goalPrefix>
   <isolatedRealm>false</isolatedRealm>
   <inheritedByDefault>true</inheritedByDefault>
   <requiredJavaVersion>17</requiredJavaVersion>
@@ -96,7 +96,28 @@
       <threadSafe>false</threadSafe>
       <parameters>
         <parameter>
+          <name>basePackage</name>
+          <type>java.lang.String</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
+        <parameter>
+          <name>configClassName</name>
+          <type>java.lang.String</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
+        <parameter>
           <name>injectHostingEndpoints</name>
+          <type>boolean</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
+        <parameter>
+          <name>injectSwaggerUI</name>
           <type>boolean</type>
           <required>false</required>
           <editable>true</editable>
@@ -111,14 +132,7 @@
         </parameter>
         <parameter>
           <name>outputDirectory</name>
-          <type>java.lang.String</type>
-          <required>false</required>
-          <editable>true</editable>
-          <description></description>
-        </parameter>
-        <parameter>
-          <name>outputFormat</name>
-          <type>java.lang.String</type>
+          <type>java.io.File</type>
           <required>false</required>
           <editable>true</editable>
           <description></description>
@@ -130,20 +144,107 @@
           <editable>false</editable>
           <description></description>
         </parameter>
+        <parameter>
+          <name>redirectFrom</name>
+          <type>java.lang.String</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
+        <parameter>
+          <name>redirectTo</name>
+          <type>java.lang.String</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
+        <parameter>
+          <name>resourceHandlerPath</name>
+          <type>java.lang.String</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
+        <parameter>
+          <name>resourceLocation</name>
+          <type>java.lang.String</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
+        <parameter>
+          <name>resourcePaths</name>
+          <type>java.lang.String[]</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
+        <parameter>
+          <name>swaggerUIConfig</name>
+          <type>com.example.springdoc.plugin.config.SwaggerUIConfig</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
+        <parameter>
+          <name>swaggerUIPath</name>
+          <type>java.lang.String</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
+        <parameter>
+          <name>swaggerUIVersion</name>
+          <type>java.lang.String</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
+        <parameter>
+          <name>templateDirectory</name>
+          <type>java.lang.String</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
+        <parameter>
+          <name>templateMappings</name>
+          <type>java.util.Map&lt;java.lang.String, java.lang.String&gt;</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
+        <parameter>
+          <name>templateVariables</name>
+          <type>java.util.Map&lt;java.lang.String, java.lang.Object&gt;</type>
+          <required>false</required>
+          <editable>true</editable>
+          <description></description>
+        </parameter>
       </parameters>
       <configuration>
-        <injectHostingEndpoints implementation="boolean" default-value="true">${injectHostingEndpoints}</injectHostingEndpoints>
-        <openApiSpec implementation="java.lang.String">${openApiSpec}</openApiSpec>
-        <outputDirectory implementation="java.lang.String" default-value="${project.build.directory}/generated-docs">${outputDirectory}</outputDirectory>
-        <outputFormat implementation="java.lang.String" default-value="html">${outputFormat}</outputFormat>
+        <basePackage implementation="java.lang.String" default-value="${project.groupId}">${springdoc.basePackage}</basePackage>
+        <configClassName implementation="java.lang.String" default-value="DocumentationConfig">${springdoc.configClassName}</configClassName>
+        <injectHostingEndpoints implementation="boolean" default-value="true">${springdoc.injectHostingEndpoints}</injectHostingEndpoints>
+        <injectSwaggerUI implementation="boolean" default-value="true">${springdoc.injectSwaggerUI}</injectSwaggerUI>
+        <openApiSpec implementation="java.lang.String">${springdoc.openApiSpec}</openApiSpec>
+        <outputDirectory implementation="java.io.File" default-value="${project.build.directory}/classes/generated-docs">${springdoc.outputDirectory}</outputDirectory>
         <project implementation="org.apache.maven.project.MavenProject">${project}</project>
+        <redirectFrom implementation="java.lang.String" default-value="/docs">${springdoc.redirectFrom}</redirectFrom>
+        <redirectTo implementation="java.lang.String" default-value="/docs/index.html">${springdoc.redirectTo}</redirectTo>
+        <resourceHandlerPath implementation="java.lang.String" default-value="/docs/**">${springdoc.resourceHandlerPath}</resourceHandlerPath>
+        <resourceLocation implementation="java.lang.String" default-value="classpath:/static/docs/">${springdoc.resourceLocation}</resourceLocation>
+        <resourcePaths implementation="java.lang.String[]" default-value="static">${springdoc.resourcePaths}</resourcePaths>
+        <swaggerUIPath implementation="java.lang.String" default-value="/swagger-ui.html">${springdoc.swaggerUIPath}</swaggerUIPath>
+        <swaggerUIVersion implementation="java.lang.String" default-value="5.11.0">${springdoc.swaggerUIVersion}</swaggerUIVersion>
+        <templateDirectory implementation="java.lang.String" default-value="templates">${springdoc.templateDirectory}</templateDirectory>
       </configuration>
     </mojo>
     <mojo>
       <goal>help</goal>
       <description>Display help information on springdoc-sdk-plugin-core.
 &lt;br /&gt;
- Call &lt;code&gt;mvn springdoc-sdkcore:help -Ddetail=true -Dgoal=&amp;lt;goal-name&amp;gt;&lt;/code&gt; to display parameter details.</description>
+ Call &lt;code&gt;mvn springdoc-core:help -Ddetail=true -Dgoal=&amp;lt;goal-name&amp;gt;&lt;/code&gt; to display parameter details.</description>
       <requiresDirectInvocation>false</requiresDirectInvocation>
       <requiresProject>false</requiresProject>
       <requiresReports>false</requiresReports>
@@ -195,28 +296,46 @@
   </mojos>
   <dependencies>
     <dependency>
-      <groupId>org.openapitools</groupId>
-      <artifactId>openapi-generator</artifactId>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
       <type>jar</type>
-      <version>7.2.0</version>
+      <version>32.0.1-jre</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <type>jar</type>
+      <version>3.12.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <type>jar</type>
+      <version>1.7.36</version>
+    </dependency>
+    <dependency>
+      <groupId>org.freemarker</groupId>
+      <artifactId>freemarker</artifactId>
+      <type>jar</type>
+      <version>2.3.32</version>
     </dependency>
     <dependency>
       <groupId>io.swagger.parser.v3</groupId>
       <artifactId>swagger-parser</artifactId>
       <type>jar</type>
-      <version>2.1.19</version>
+      <version>2.1.22</version>
     </dependency>
     <dependency>
       <groupId>io.swagger.parser.v3</groupId>
       <artifactId>swagger-parser-v2-converter</artifactId>
       <type>jar</type>
-      <version>2.1.19</version>
+      <version>2.1.22</version>
     </dependency>
     <dependency>
       <groupId>io.swagger</groupId>
       <artifactId>swagger-core</artifactId>
       <type>jar</type>
-      <version>1.6.12</version>
+      <version>1.6.14</version>
     </dependency>
     <dependency>
       <groupId>jakarta.xml.bind</groupId>
@@ -234,25 +353,31 @@
       <groupId>io.swagger</groupId>
       <artifactId>swagger-models</artifactId>
       <type>jar</type>
-      <version>1.6.12</version>
+      <version>1.6.14</version>
     </dependency>
     <dependency>
       <groupId>io.swagger</groupId>
       <artifactId>swagger-annotations</artifactId>
       <type>jar</type>
-      <version>1.6.12</version>
+      <version>1.6.14</version>
     </dependency>
     <dependency>
       <groupId>io.swagger</groupId>
       <artifactId>swagger-parser</artifactId>
       <type>jar</type>
-      <version>1.0.68</version>
+      <version>1.0.70</version>
+    </dependency>
+    <dependency>
+      <groupId>io.swagger</groupId>
+      <artifactId>swagger-parser-safe-url-resolver</artifactId>
+      <type>jar</type>
+      <version>1.0.70</version>
     </dependency>
     <dependency>
       <groupId>io.swagger</groupId>
       <artifactId>swagger-compat-spec-parser</artifactId>
       <type>jar</type>
-      <version>1.0.68</version>
+      <version>1.0.70</version>
     </dependency>
     <dependency>
       <groupId>com.github.java-json-tools</groupId>
@@ -285,10 +410,22 @@
       <version>1.7.7.2</version>
     </dependency>
     <dependency>
+      <groupId>joda-time</groupId>
+      <artifactId>joda-time</artifactId>
+      <type>jar</type>
+      <version>2.10.5</version>
+    </dependency>
+    <dependency>
       <groupId>com.googlecode.libphonenumber</groupId>
       <artifactId>libphonenumber</artifactId>
       <type>jar</type>
       <version>8.11.1</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>jsr305</artifactId>
+      <type>jar</type>
+      <version>3.0.2</version>
     </dependency>
     <dependency>
       <groupId>net.sf.jopt-simple</groupId>
@@ -348,37 +485,37 @@
       <groupId>io.swagger.core.v3</groupId>
       <artifactId>swagger-models</artifactId>
       <type>jar</type>
-      <version>2.2.19</version>
+      <version>2.2.21</version>
     </dependency>
     <dependency>
       <groupId>io.swagger.parser.v3</groupId>
       <artifactId>swagger-parser-core</artifactId>
       <type>jar</type>
-      <version>2.1.19</version>
+      <version>2.1.22</version>
     </dependency>
     <dependency>
       <groupId>io.swagger.parser.v3</groupId>
       <artifactId>swagger-parser-v3</artifactId>
       <type>jar</type>
-      <version>2.1.19</version>
+      <version>2.1.22</version>
     </dependency>
     <dependency>
       <groupId>io.swagger.core.v3</groupId>
       <artifactId>swagger-core</artifactId>
       <type>jar</type>
-      <version>2.2.19</version>
+      <version>2.2.21</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-jsr310</artifactId>
       <type>jar</type>
-      <version>2.15.2</version>
+      <version>2.16.2</version>
     </dependency>
     <dependency>
       <groupId>io.swagger.core.v3</groupId>
       <artifactId>swagger-annotations</artifactId>
       <type>jar</type>
-      <version>2.2.19</version>
+      <version>2.2.21</version>
     </dependency>
     <dependency>
       <groupId>jakarta.validation</groupId>
@@ -390,13 +527,31 @@
       <groupId>io.swagger.parser.v3</groupId>
       <artifactId>swagger-parser-safe-url-resolver</artifactId>
       <type>jar</type>
-      <version>2.1.19</version>
+      <version>2.1.22</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+      <type>jar</type>
+      <version>2.16.2</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <type>jar</type>
+      <version>2.16.2</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+      <type>jar</type>
+      <version>2.16.2</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.dataformat</groupId>
       <artifactId>jackson-dataformat-yaml</artifactId>
       <type>jar</type>
-      <version>2.15.3</version>
+      <version>2.16.2</version>
     </dependency>
     <dependency>
       <groupId>org.yaml</groupId>
@@ -405,370 +560,10 @@
       <version>2.2</version>
     </dependency>
     <dependency>
-      <groupId>com.samskivert</groupId>
-      <artifactId>jmustache</artifactId>
-      <type>jar</type>
-      <version>1.15</version>
-    </dependency>
-    <dependency>
-      <groupId>com.github.jknack</groupId>
-      <artifactId>handlebars</artifactId>
-      <type>jar</type>
-      <version>4.3.1</version>
-    </dependency>
-    <dependency>
-      <groupId>com.github.jknack</groupId>
-      <artifactId>handlebars-jackson2</artifactId>
-      <type>jar</type>
-      <version>4.3.1</version>
-    </dependency>
-    <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
       <type>jar</type>
-      <version>2.11.0</version>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-ext</artifactId>
-      <type>jar</type>
-      <version>1.7.36</version>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <type>jar</type>
-      <version>1.7.36</version>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-simple</artifactId>
-      <type>jar</type>
-      <version>1.7.36</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-      <type>jar</type>
-      <version>3.12.0</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-text</artifactId>
-      <type>jar</type>
-      <version>1.10.0</version>
-    </dependency>
-    <dependency>
-      <groupId>commons-cli</groupId>
-      <artifactId>commons-cli</artifactId>
-      <type>jar</type>
-      <version>1.5.0</version>
-    </dependency>
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <type>jar</type>
-      <version>32.1.3-jre</version>
-    </dependency>
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>failureaccess</artifactId>
-      <type>jar</type>
-      <version>1.0.1</version>
-    </dependency>
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>listenablefuture</artifactId>
-      <type>jar</type>
-      <version>9999.0-empty-to-avoid-conflict-with-guava</version>
-    </dependency>
-    <dependency>
-      <groupId>com.google.code.findbugs</groupId>
-      <artifactId>jsr305</artifactId>
-      <type>jar</type>
-      <version>3.0.2</version>
-    </dependency>
-    <dependency>
-      <groupId>org.checkerframework</groupId>
-      <artifactId>checker-qual</artifactId>
-      <type>jar</type>
-      <version>3.37.0</version>
-    </dependency>
-    <dependency>
-      <groupId>com.google.errorprone</groupId>
-      <artifactId>error_prone_annotations</artifactId>
-      <type>jar</type>
-      <version>2.21.1</version>
-    </dependency>
-    <dependency>
-      <groupId>com.google.j2objc</groupId>
-      <artifactId>j2objc-annotations</artifactId>
-      <type>jar</type>
-      <version>2.8</version>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.datatype</groupId>
-      <artifactId>jackson-datatype-guava</artifactId>
-      <type>jar</type>
-      <version>2.15.3</version>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
-      <type>jar</type>
-      <version>2.15.3</version>
-    </dependency>
-    <dependency>
-      <groupId>org.commonmark</groupId>
-      <artifactId>commonmark</artifactId>
-      <type>jar</type>
-      <version>0.21.0</version>
-    </dependency>
-    <dependency>
-      <groupId>com.github.mifmif</groupId>
-      <artifactId>generex</artifactId>
-      <type>jar</type>
-      <version>1.0.2</version>
-    </dependency>
-    <dependency>
-      <groupId>dk.brics.automaton</groupId>
-      <artifactId>automaton</artifactId>
-      <type>jar</type>
-      <version>1.11-8</version>
-    </dependency>
-    <dependency>
-      <groupId>com.github.curious-odd-man</groupId>
-      <artifactId>rgxgen</artifactId>
-      <type>jar</type>
-      <version>1.4</version>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-      <type>jar</type>
-      <version>2.15.3</version>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-annotations</artifactId>
-      <type>jar</type>
-      <version>2.15.3</version>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.datatype</groupId>
-      <artifactId>jackson-datatype-joda</artifactId>
-      <type>jar</type>
-      <version>2.15.3</version>
-    </dependency>
-    <dependency>
-      <groupId>joda-time</groupId>
-      <artifactId>joda-time</artifactId>
-      <type>jar</type>
-      <version>2.10.14</version>
-    </dependency>
-    <dependency>
-      <groupId>com.github.joschi.jackson</groupId>
-      <artifactId>jackson-datatype-threetenbp</artifactId>
-      <type>jar</type>
-      <version>2.15.2</version>
-    </dependency>
-    <dependency>
-      <groupId>org.threeten</groupId>
-      <artifactId>threetenbp</artifactId>
-      <type>jar</type>
-      <version>1.6.8</version>
-    </dependency>
-    <dependency>
-      <groupId>org.openapitools</groupId>
-      <artifactId>openapi-generator-core</artifactId>
-      <type>jar</type>
-      <version>7.2.0</version>
-    </dependency>
-    <dependency>
-      <groupId>net.java.dev.jna</groupId>
-      <artifactId>jna</artifactId>
-      <type>jar</type>
-      <version>5.12.1</version>
-    </dependency>
-    <dependency>
-      <groupId>com.github.ben-manes.caffeine</groupId>
-      <artifactId>caffeine</artifactId>
-      <type>jar</type>
-      <version>2.9.3</version>
-    </dependency>
-    <dependency>
-      <groupId>org.asciidoctor</groupId>
-      <artifactId>asciidoctorj</artifactId>
-      <type>jar</type>
-      <version>3.0.0</version>
-    </dependency>
-    <dependency>
-      <groupId>org.asciidoctor</groupId>
-      <artifactId>asciidoctorj-api</artifactId>
-      <type>jar</type>
-      <version>3.0.0</version>
-    </dependency>
-    <dependency>
-      <groupId>org.jruby</groupId>
-      <artifactId>jruby</artifactId>
-      <type>jar</type>
-      <version>9.4.8.0</version>
-    </dependency>
-    <dependency>
-      <groupId>org.jruby</groupId>
-      <artifactId>jruby-base</artifactId>
-      <type>jar</type>
-      <version>9.4.8.0</version>
-    </dependency>
-    <dependency>
-      <groupId>org.ow2.asm</groupId>
-      <artifactId>asm</artifactId>
-      <type>jar</type>
-      <version>9.2</version>
-    </dependency>
-    <dependency>
-      <groupId>org.ow2.asm</groupId>
-      <artifactId>asm-commons</artifactId>
-      <type>jar</type>
-      <version>9.2</version>
-    </dependency>
-    <dependency>
-      <groupId>org.ow2.asm</groupId>
-      <artifactId>asm-tree</artifactId>
-      <type>jar</type>
-      <version>9.2</version>
-    </dependency>
-    <dependency>
-      <groupId>org.ow2.asm</groupId>
-      <artifactId>asm-analysis</artifactId>
-      <type>jar</type>
-      <version>9.2</version>
-    </dependency>
-    <dependency>
-      <groupId>org.ow2.asm</groupId>
-      <artifactId>asm-util</artifactId>
-      <type>jar</type>
-      <version>9.2</version>
-    </dependency>
-    <dependency>
-      <groupId>com.github.jnr</groupId>
-      <artifactId>jnr-netdb</artifactId>
-      <type>jar</type>
-      <version>1.2.0</version>
-    </dependency>
-    <dependency>
-      <groupId>com.github.jnr</groupId>
-      <artifactId>jnr-enxio</artifactId>
-      <type>jar</type>
-      <version>0.32.17</version>
-    </dependency>
-    <dependency>
-      <groupId>com.github.jnr</groupId>
-      <artifactId>jnr-unixsocket</artifactId>
-      <type>jar</type>
-      <version>0.38.22</version>
-    </dependency>
-    <dependency>
-      <groupId>com.github.jnr</groupId>
-      <artifactId>jnr-posix</artifactId>
-      <type>jar</type>
-      <version>3.1.19</version>
-    </dependency>
-    <dependency>
-      <groupId>com.github.jnr</groupId>
-      <artifactId>jnr-constants</artifactId>
-      <type>jar</type>
-      <version>0.10.4</version>
-    </dependency>
-    <dependency>
-      <groupId>com.github.jnr</groupId>
-      <artifactId>jnr-ffi</artifactId>
-      <type>jar</type>
-      <version>2.2.16</version>
-    </dependency>
-    <dependency>
-      <groupId>com.github.jnr</groupId>
-      <artifactId>jnr-a64asm</artifactId>
-      <type>jar</type>
-      <version>1.0.0</version>
-    </dependency>
-    <dependency>
-      <groupId>com.github.jnr</groupId>
-      <artifactId>jnr-x86asm</artifactId>
-      <type>jar</type>
-      <version>1.0.2</version>
-    </dependency>
-    <dependency>
-      <groupId>com.github.jnr</groupId>
-      <artifactId>jffi</artifactId>
-      <type>jar</type>
-      <version>1.3.13</version>
-    </dependency>
-    <dependency>
-      <groupId>com.github.jnr</groupId>
-      <artifactId>jffi</artifactId>
-      <type>jar</type>
-      <version>1.3.13</version>
-    </dependency>
-    <dependency>
-      <groupId>org.jruby.joni</groupId>
-      <artifactId>joni</artifactId>
-      <type>jar</type>
-      <version>2.2.1</version>
-    </dependency>
-    <dependency>
-      <groupId>org.jruby.jcodings</groupId>
-      <artifactId>jcodings</artifactId>
-      <type>jar</type>
-      <version>1.0.58</version>
-    </dependency>
-    <dependency>
-      <groupId>org.jruby</groupId>
-      <artifactId>dirgra</artifactId>
-      <type>jar</type>
-      <version>0.3</version>
-    </dependency>
-    <dependency>
-      <groupId>com.headius</groupId>
-      <artifactId>invokebinder</artifactId>
-      <type>jar</type>
-      <version>1.13</version>
-    </dependency>
-    <dependency>
-      <groupId>com.headius</groupId>
-      <artifactId>options</artifactId>
-      <type>jar</type>
-      <version>1.6</version>
-    </dependency>
-    <dependency>
-      <groupId>org.jruby</groupId>
-      <artifactId>jzlib</artifactId>
-      <type>jar</type>
-      <version>1.1.5</version>
-    </dependency>
-    <dependency>
-      <groupId>me.qmx.jitescript</groupId>
-      <artifactId>jitescript</artifactId>
-      <type>jar</type>
-      <version>0.4.1</version>
-    </dependency>
-    <dependency>
-      <groupId>com.headius</groupId>
-      <artifactId>backport9</artifactId>
-      <type>jar</type>
-      <version>1.13</version>
-    </dependency>
-    <dependency>
-      <groupId>org.jruby</groupId>
-      <artifactId>jruby-stdlib</artifactId>
-      <type>jar</type>
-      <version>9.4.8.0</version>
-    </dependency>
-    <dependency>
-      <groupId>org.freemarker</groupId>
-      <artifactId>freemarker</artifactId>
-      <type>jar</type>
-      <version>2.3.32</version>
+      <version>2.15.1</version>
     </dependency>
   </dependencies>
 </plugin>

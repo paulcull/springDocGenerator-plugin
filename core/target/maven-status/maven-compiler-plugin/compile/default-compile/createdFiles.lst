@@ -1,3 +1,6 @@
 com/example/springdoc_sdk_plugin_core/HelpMojo.class
 com/example/springdoc/plugin/GenerateDocsMojo.class
+com/example/springdoc/plugin/template/TemplateManager.class
+com/example/springdoc/plugin/config/SwaggerUIConfig.class
 com/example/springdoc/sdk/plugin/core/SpringDocSdkPlugin.class
+com/example/springdoc/plugin/config/PluginConfiguration.class

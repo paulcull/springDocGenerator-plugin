@@ -21,7 +21,7 @@ import java.util.List;
 
 /**
  * Display help information on springdoc-sdk-plugin-docs-generator.<br>
- * Call <code>mvn springdoc-sdkdocs-generator:help -Ddetail=true -Dgoal=&lt;goal-name&gt;</code> to display parameter details.
+ * Call <code>mvn springdoc-docs:help -Ddetail=true -Dgoal=&lt;goal-name&gt;</code> to display parameter details.
  * @author maven-plugin-tools
  */
 @Mojo( name = "help", requiresProject = false, threadSafe = true )

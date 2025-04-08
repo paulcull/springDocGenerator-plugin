@@ -1,3 +1,6 @@
+/Users/paul/Code/Projects/springDocGenerator-plugin/core/src/main/java/com/example/springdoc/plugin/config/PluginConfiguration.java
 /Users/paul/Code/Projects/springDocGenerator-plugin/core/src/main/java/com/example/springdoc/sdk/plugin/core/SpringDocSdkPlugin.java
 /Users/paul/Code/Projects/springDocGenerator-plugin/core/target/generated-sources/plugin/com/example/springdoc_sdk_plugin_core/HelpMojo.java
+/Users/paul/Code/Projects/springDocGenerator-plugin/core/src/main/java/com/example/springdoc/plugin/config/SwaggerUIConfig.java
+/Users/paul/Code/Projects/springDocGenerator-plugin/core/src/main/java/com/example/springdoc/plugin/template/TemplateManager.java
 /Users/paul/Code/Projects/springDocGenerator-plugin/core/src/main/java/com/example/springdoc/plugin/GenerateDocsMojo.java
