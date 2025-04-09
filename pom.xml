@@ -32,6 +32,29 @@
         <jackson.version>2.15.3</jackson.version>
     </properties>
 
+    <!-- Dependency Management for potential SDK runtime dependencies -->
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Web Reactive (for WebClient based SDKs) -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-webflux</artifactId>
+                <version>3.2.3</version> <!-- Align with common Spring Boot versions -->
+            </dependency>
+            
+            <!-- Jackson Databind (often required for JSON) -->
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson.version}</version> <!-- Use existing property -->
+            </dependency>
+
+            <!-- Add other common SDK dependencies here if needed -->
+            <!-- e.g., specific http clients, date/time libs -->
+
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <dependency>
             <groupId>org.apache.maven</groupId>

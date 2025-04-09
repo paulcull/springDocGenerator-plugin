@@ -21,7 +21,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -251,23 +253,213 @@ public class GenerateDocsMojo extends AbstractMojo {
 
     private void processTemplates(OpenAPI openAPI) throws IOException, TemplateException, MojoExecutionException {
         try {
-            // Prepare template data
+            // Prepare PRE-PROCESSED, simplified template data
             Map<String, Object> data = new HashMap<>();
-            data.put("openAPI", openAPI);
-            data.put("title", openAPI.getInfo().getTitle());
-            data.put("description", openAPI.getInfo().getDescription());
-            data.put("version", openAPI.getInfo().getVersion());
+
+            // --- Info --- 
+            Map<String, Object> infoMap = new HashMap<>();
+            if (openAPI.getInfo() != null) {
+                infoMap.put("title", openAPI.getInfo().getTitle());
+                infoMap.put("version", openAPI.getInfo().getVersion());
+                infoMap.put("description", openAPI.getInfo().getDescription());
+                if (openAPI.getInfo().getContact() != null) {
+                    Map<String, String> contactMap = new HashMap<>();
+                    contactMap.put("name", openAPI.getInfo().getContact().getName());
+                    contactMap.put("email", openAPI.getInfo().getContact().getEmail());
+                    contactMap.put("url", openAPI.getInfo().getContact().getUrl());
+                    infoMap.put("contact", contactMap);
+                }
+                 if (openAPI.getInfo().getLicense() != null) {
+                    Map<String, String> licenseMap = new HashMap<>();
+                    licenseMap.put("name", openAPI.getInfo().getLicense().getName());
+                    licenseMap.put("url", openAPI.getInfo().getLicense().getUrl());
+                    infoMap.put("license", licenseMap);
+                }
+            }
+            data.put("info", infoMap);
+            data.put("title", infoMap.getOrDefault("title", "API Documentation")); // For convenience
+
+            // --- Servers --- 
+            List<Map<String, String>> serverList = new ArrayList<>();
+            if (openAPI.getServers() != null) {
+                openAPI.getServers().forEach(server -> {
+                    Map<String, String> serverMap = new HashMap<>();
+                    serverMap.put("url", server.getUrl());
+                    serverMap.put("description", server.getDescription());
+                    serverList.add(serverMap);
+                });
+            }
+            data.put("servers", serverList);
+
+            // --- Paths & Operations --- 
+            List<Map<String, Object>> pathList = new ArrayList<>();
+            if (openAPI.getPaths() != null) {
+                openAPI.getPaths().forEach((pathUrl, pathItem) -> {
+                    if (pathItem == null) return; // Skip if pathItem itself is null
+
+                    Map<String, Object> pathData = new HashMap<>();
+                    pathData.put("url", pathUrl);
+                    List<Map<String, Object>> operationList = new ArrayList<>();
+
+                    // Use pathItem.readOperationsMap() for safer iteration
+                    if (pathItem.readOperationsMap() != null) {
+                         pathItem.readOperationsMap().forEach((httpMethod, operation) -> {
+                            if (operation == null) return; // Skip null operations
+
+                            Map<String, Object> opData = new HashMap<>();
+                            opData.put("method", httpMethod.name().toUpperCase());
+                            opData.put("summary", operation.getSummary());
+                            opData.put("description", operation.getDescription());
+                            opData.put("operationId", operation.getOperationId());
+                            opData.put("id", (operation.getOperationId() != null) ? operation.getOperationId() : ("op_" + pathUrl.replace("/","_").replace("{","").replace("}","") + "_" + httpMethod.name().toLowerCase()));
+
+                            // Parameters
+                            List<Map<String, Object>> paramList = new ArrayList<>();
+                            if (operation.getParameters() != null) {
+                                operation.getParameters().forEach(param -> {
+                                    Map<String, Object> paramData = new HashMap<>();
+                                    paramData.put("name", param.getName());
+                                    paramData.put("in", param.getIn());
+                                    paramData.put("required", param.getRequired() != null && param.getRequired());
+                                    paramData.put("description", param.getDescription());
+                                    if (param.getSchema() != null) {
+                                        paramData.put("schemaType", param.getSchema().getType());
+                                        paramData.put("schemaFormat", param.getSchema().getFormat());
+                                        paramData.put("schemaRef", param.getSchema().get$ref());
+                                    }
+                                    paramList.add(paramData);
+                                });
+                            }
+                            opData.put("parameters", paramList);
+
+                            // Request Body
+                            if (operation.getRequestBody() != null) {
+                                Map<String, Object> reqBodyData = new HashMap<>();
+                                reqBodyData.put("description", operation.getRequestBody().getDescription());
+                                reqBodyData.put("required", operation.getRequestBody().getRequired() != null && operation.getRequestBody().getRequired());
+                                Map<String, Map<String, String>> contentMap = new HashMap<>();
+                                if (operation.getRequestBody().getContent() != null) {
+                                    operation.getRequestBody().getContent().forEach((contentType, mediaType) -> {
+                                        if (mediaType != null && mediaType.getSchema() != null) {
+                                            Map<String, String> schemaData = new HashMap<>();
+                                            schemaData.put("type", mediaType.getSchema().getType());
+                                            schemaData.put("ref", mediaType.getSchema().get$ref());
+                                            contentMap.put(contentType, schemaData);
+                                        }
+                                    });
+                                }
+                                reqBodyData.put("content", contentMap);
+                                opData.put("requestBody", reqBodyData);
+                            }
+
+                            // Responses
+                            Map<String, Map<String, Object>> responsesMap = new HashMap<>();
+                            if (operation.getResponses() != null) {
+                                operation.getResponses().forEach((code, response) -> {
+                                    if (response == null) return;
+                                    Map<String, Object> responseData = new HashMap<>();
+                                    responseData.put("description", response.getDescription());
+                                    Map<String, Map<String, String>> contentMap = new HashMap<>();
+                                     if (response.getContent() != null) {
+                                        response.getContent().forEach((contentType, mediaType) -> {
+                                            if (mediaType != null && mediaType.getSchema() != null) {
+                                                Map<String, String> schemaData = new HashMap<>();
+                                                schemaData.put("type", mediaType.getSchema().getType());
+                                                schemaData.put("ref", mediaType.getSchema().get$ref());
+                                                contentMap.put(contentType, schemaData);
+                                            }
+                                        });
+                                    }
+                                    responseData.put("content", contentMap);
+                                    responsesMap.put(code, responseData);
+                                });
+                            }
+                            opData.put("responses", responsesMap);
+
+                            operationList.add(opData);
+                        });
+                    }
+                    // Sort operations for consistent order (optional)
+                    operationList.sort(Comparator.comparing(o -> (String) o.get("method"))); 
+                    pathData.put("operations", operationList);
+                    pathList.add(pathData);
+                });
+            }
+            // Sort paths for consistent order (optional)
+            pathList.sort(Comparator.comparing(p -> (String) p.get("url"))); 
+            data.put("paths", pathList);
+
+            // --- Schemas --- 
+            List<Map<String, Object>> schemaList = new ArrayList<>();
+            if (openAPI.getComponents() != null && openAPI.getComponents().getSchemas() != null) {
+                openAPI.getComponents().getSchemas().forEach((name, schema) -> {
+                     if (schema == null) return;
+                     Map<String, Object> schemaData = new HashMap<>();
+                     schemaData.put("name", name);
+                     schemaData.put("type", schema.getType());
+                     schemaData.put("format", schema.getFormat());
+                     schemaData.put("description", schema.getDescription());
+                     schemaData.put("requiredFields", schema.getRequired()); // List<String>
+                     
+                     List<Map<String, Object>> propList = new ArrayList<>();
+                     if (schema.getProperties() != null) {
+                         schema.getProperties().forEach((propName, propSchemaObj) -> {
+                             if (propSchemaObj == null) return;
+                             // Cast the value to Schema
+                             io.swagger.v3.oas.models.media.Schema propSchema = (io.swagger.v3.oas.models.media.Schema) propSchemaObj;
+                             
+                             Map<String, Object> propData = new HashMap<>();
+                             propData.put("name", propName);
+                             propData.put("type", propSchema.getType());
+                             propData.put("format", propSchema.getFormat());
+                             propData.put("description", propSchema.getDescription());
+                             propData.put("ref", propSchema.get$ref());
+                             if (propSchema.getItems() != null) { // Handle array items
+                                 // Cast item schema as well
+                                 io.swagger.v3.oas.models.media.Schema itemSchema = propSchema.getItems();
+                                 Map<String, String> itemsData = new HashMap<>();
+                                 itemsData.put("type", itemSchema.getType());
+                                 itemsData.put("ref", itemSchema.get$ref());
+                                 propData.put("items", itemsData);
+                             }
+                             propList.add(propData);
+                         });
+                         // Sort properties alphabetically (optional)
+                         propList.sort(Comparator.comparing(p -> (String) p.get("name"))); 
+                     }
+                     schemaData.put("properties", propList);
+                     schemaList.add(schemaData);
+                });
+                // Sort schemas alphabetically (optional)
+                schemaList.sort(Comparator.comparing(s -> (String) s.get("name"))); 
+            }
+            data.put("schemas", schemaList);
+
+            // Add other necessary simple data for templates
             data.put("basePackage", configuration.getBasePackage());
             data.put("configClassName", configuration.getConfigClassName());
-            data.put("swaggerUIConfig", configuration.getSwaggerUIConfig());
+            // Note: swaggerUIConfig is complex, pass it directly or simplify if needed
+            data.put("swaggerUIConfig", configuration.getSwaggerUIConfig()); 
+             // Add any user-provided template variables
+            if (templateVariables != null) {
+                data.putAll(templateVariables);
+            }
 
-            // Process each template
-            for (Map.Entry<String, String> entry : configuration.getTemplateMappings().entrySet()) {
-                String templateName = entry.getKey();
-                String outputFileName = entry.getValue();
-                Path outputPath = Paths.get(outputDirectory.toString(), outputFileName);
-                templateManager.writeTemplate(templateName, data, outputPath);
-                getLog().info("Generated " + outputFileName);
+            // Process each template mapping
+            if (configuration.getTemplateMappings() != null) {
+                for (Map.Entry<String, String> entry : configuration.getTemplateMappings().entrySet()) {
+                    String templateName = entry.getKey();
+                    String outputFileName = entry.getValue();
+                    if (templateName == null || outputFileName == null) {
+                        getLog().warn("Skipping invalid template mapping entry: " + entry);
+                        continue;
+                    }
+                    Path outputPath = Paths.get(outputDirectory.toString(), outputFileName);
+                    templateManager.writeTemplate(templateName, data, outputPath);
+                    getLog().info("Generated " + outputFileName);
+                }
+            } else {
+                 getLog().info("No template mappings configured.");
             }
         } catch (IOException | TemplateException e) {
             throw new MojoExecutionException("Failed to process templates: " + e.getMessage(), e);

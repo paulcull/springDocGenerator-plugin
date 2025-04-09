@@ -1,7 +1,5 @@
 package ${packageName};
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
@@ -13,8 +11,6 @@ import java.io.IOException;
 @Configuration
 public class ${className} implements WebMvcConfigurer {
 
-    private static final Logger logger = LoggerFactory.getLogger(${className}.class);
-
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("${resourceHandlerPath}")
@@ -23,20 +19,20 @@ public class ${className} implements WebMvcConfigurer {
                 .addResolver(new PathResourceResolver() {
                     @Override
                     protected Resource getResource(String resourcePath, Resource location) throws IOException {
-                        logger.debug("Serving documentation file: {}", resourcePath);
                         Resource requestedResource = location.createRelative(resourcePath);
+                        // Ensure resource exists and is readable, otherwise return null (serves 404)
                         return requestedResource.exists() && requestedResource.isReadable() ? requestedResource : null;
                     }
                 });
 
-        // Add redirect from /docs to /docs/index.html
+        // Add redirect from the specified path (e.g., /docs) to the index file (e.g., /docs/index.html)
         registry.addResourceHandler("${redirectFrom}")
                 .addResourceLocations("${resourceLocation}")
                 .resourceChain(true)
                 .addResolver(new PathResourceResolver() {
                     @Override
                     protected Resource getResource(String resourcePath, Resource location) throws IOException {
-                        logger.debug("Redirecting from {} to {}", "${redirectFrom}", "${redirectTo}");
+                        // Always serve index.html for the redirect path
                         return location.createRelative("index.html");
                     }
                 });
